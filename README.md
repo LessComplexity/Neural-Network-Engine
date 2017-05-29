@@ -7,7 +7,9 @@ A neural network library for easy use and customization of AI based on neural ne
 [+] NNE: Feedforward layer toology has been defined: [=] { 50 50 45 40 35 30 25 20 15 10 }
 
 [=] NNE: Loading network to memory
+
 [+] NNE: Connections have been loaded.
+
 OP Time (ms): 2
 
 [=] NNE: Running network...
