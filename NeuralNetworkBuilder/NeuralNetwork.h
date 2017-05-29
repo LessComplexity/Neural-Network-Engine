@@ -19,7 +19,7 @@ class NeuralNetwork
 public:
 	NeuralNetwork();
 	NeuralNetwork(int network_topology);
-	~NeuralNetwork();
+	virtual ~NeuralNetwork();
 
 	// Class functions
 	void defineFeedForwardNetwork(std::vector<int> layer_topology);
@@ -46,7 +46,7 @@ private:
 	std::vector<int> network_topology;
 
 	// A layer which is defined for a feedforward network topology
-	std::vector<Layer> feedforward_layers;
+	std::vector<Layer> * feedforward_layers = new std::vector<Layer>();
 
 	// Vector that stores the last output
 	std::vector<double> lastOutput;
