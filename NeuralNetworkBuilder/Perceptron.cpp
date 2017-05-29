@@ -15,7 +15,7 @@
 
 Perceptron::Perceptron()
 {
-	Perceptron::asStandart(*this);
+	Perceptron::asStandart(this);
 }
 
 Perceptron::Perceptron(unsigned type)
@@ -24,27 +24,27 @@ Perceptron::Perceptron(unsigned type)
 	switch (this->neuron_type)
 	{
 	case BIAS_NEURON:
-		Perceptron::asBias(*this);
+		Perceptron::asBias(this);
 
 		break;
 	case INPUT_NEURON:
-		Perceptron::asInput(*this);
+		Perceptron::asInput(this);
 
 		break;
 	case STANDART_NEURON:
-		Perceptron::asStandart(*this);
+		Perceptron::asStandart(this);
 
 		break;
 	case STANDART_NEURON_HEAVISIDE:
-		Perceptron::asStandartHeaviside(*this);
+		Perceptron::asStandartHeaviside(this);
 
 		break;
 	case STANDART_NEURON_FREMI:
-		Perceptron::asStandartFermi(*this);
+		Perceptron::asStandartFermi(this);
 
 		break;
 	case STANDART_NEURON_HYPERBOLIC:
-		Perceptron::asStandartHyperbolic(*this);
+		Perceptron::asStandartHyperbolic(this);
 
 		break;
 	default:
@@ -72,48 +72,48 @@ void Perceptron::RunNeuron(double input)
 }
 
 // Define neuron as a bias neuron
-void Perceptron::asBias(Perceptron& neuron)
+void Perceptron::asBias(Perceptron* neuron)
 {
 	// A bias neuron doesn't allow any input
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	neuron->setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
 		return 0;
 	});
 
 	// There's no need for an activation function
-	neuron.setActivationFunction([](double& input) -> double {
+	neuron->setActivationFunction([](double& input) -> double {
 		return 0;
 	});
 
 	// Output will alway be 1
-	neuron.setOutputFunction([](double& input) -> double {
+	neuron->setOutputFunction([](double& input) -> double {
 		return 1;
 	});
 }
 
 // Define neuron as an input neuron
-void Perceptron::asInput(Perceptron& neuron)
+void Perceptron::asInput(Perceptron* neuron)
 {
 	// A propagation function is not needed
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	neuron->setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
 		return 0;
 	});
 
 	// There's no need for an activation function
-	neuron.setActivationFunction([](double& input) -> double {
+	neuron->setActivationFunction([](double& input) -> double {
 		return 0;
 	});
 
 	// Output will alway be the input
-	neuron.setOutputFunction([](double& input) -> double {
+	neuron->setOutputFunction([](double& input) -> double {
 		return input;
 	});
 }
 
 // Define neuron as standart
-void Perceptron::asStandart(Perceptron& neuron)
+void Perceptron::asStandart(Perceptron* neuron)
 {
 	// Standart propagation function
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	neuron->setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
 		double network_input = 0;
 
 		// Check if the size of inputs and connections is corrent
@@ -132,21 +132,21 @@ void Perceptron::asStandart(Perceptron& neuron)
 	});
 
 	// We want to return the propagation function output
-	neuron.setActivationFunction([](double& input) -> double {
+	neuron->setActivationFunction([](double& input) -> double {
 		return input;
 	});
 
 	// We want the output function to return the activation output
-	neuron.setOutputFunction([](double& input) -> double {
+	neuron->setOutputFunction([](double& input) -> double {
 		return input;
 	});
 }
 
 // Define a strandart neuron with the heaviside activation function
-void Perceptron::asStandartHeaviside(Perceptron& neuron)
+void Perceptron::asStandartHeaviside(Perceptron* neuron)
 {
 	// Standart propagation function
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	neuron->setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
 		double network_input = 0;
 
 		// Check if the size of inputs and connections is corrent
@@ -165,7 +165,7 @@ void Perceptron::asStandartHeaviside(Perceptron& neuron)
 	});
 
 	// If the input in the network is above 0, then return 1
-	neuron.setActivationFunction([](double& input) -> double {
+	neuron->setActivationFunction([](double& input) -> double {
 		if (input > 0)
 			return 1;
 
@@ -173,16 +173,16 @@ void Perceptron::asStandartHeaviside(Perceptron& neuron)
 	});
 
 	// We want the output function to return the activation output
-	neuron.setOutputFunction([](double& input) -> double {
+	neuron->setOutputFunction([](double& input) -> double {
 		return input;
 	});
 }
 
 // Define a strandart neuron with the hyperbolic activation function
-void Perceptron::asStandartHyperbolic(Perceptron& neuron)
+void Perceptron::asStandartHyperbolic(Perceptron* neuron)
 {
 	// Standart propagation function
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	neuron->setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
 		double network_input = 0;
 
 		// Check if the size of inputs and connections is corrent
@@ -201,21 +201,23 @@ void Perceptron::asStandartHyperbolic(Perceptron& neuron)
 	});
 
 	// Hyperbolic function for neuron activation
-	neuron.setActivationFunction([](double& input) -> double {
+	neuron->setActivationFunction([](double& input) -> double {
 		return std::tanh(input);
 	});
 
 	// We want the output function to return the activation output
-	neuron.setOutputFunction([](double& input) -> double {
+	neuron->setOutputFunction([](double& input) -> double {
 		return input;
 	});
 }
 
 // Define a strandart neuron with the fermi function as an activation function
-void Perceptron::asStandartFermi(Perceptron& neuron)
+void Perceptron::asStandartFermi(Perceptron* neuron)
 {
-	// Standart propagation function
-	neuron.setPropagationFunction([](Layer& inputs_neurons, Connections& connections) -> double {
+	// Standart set functions
+	neuron->setNeuronFunctions(
+	// Propagation function
+	[](Layer& inputs_neurons, Connections& connections) -> double {
 		double network_input = 0;
 
 		// Check if the size of inputs and connections is corrent
@@ -231,22 +233,36 @@ void Perceptron::asStandartFermi(Perceptron& neuron)
 		}
 
 		return network_input;
-	});
-
-	// Fermi's function for neuron activation
-	neuron.setActivationFunction([](double& input) -> double {
+	},
+	// Activation function
+	[](double& input) -> double {
 		return (1 / exp(1 + std::exp(input)));
-	});
-
-	// We want the output function to return the activation output
-	neuron.setOutputFunction([](double& input) -> double {
+	},
+	// Output function
+	[](double& input) -> double {
 		return input;
-	});
+	}
+	);
 }
 
 void Perceptron::addConnection(int neuron_id, Connection toadd)
 {
 	this->connections.insert_or_assign(neuron_id, toadd);
+}
+
+std::function<double(Layer&inputs_neurons, Connections&connections)> Perceptron::getPropagationFunction()
+{
+	return this->propagationFunction;
+}
+
+std::function<double(double&input)> Perceptron::getActivationFunction()
+{
+	return this->activationFunction;
+}
+
+std::function<double(double&input)> Perceptron::getOutputFunction()
+{
+	return this->outputFunction;
 }
 
 // Sets user defined propagation function
@@ -264,7 +280,15 @@ void Perceptron::setActivationFunction(std::function<double(double& input)> acti
 // Sets user defined output function
 void Perceptron::setOutputFunction(std::function<double(double& input)> output)
 {
-	this->activationFunction = output;
+	this->outputFunction = output;
+}
+
+// Sets all neuron's run functions
+void Perceptron::setNeuronFunctions(std::function<double(Layer&inputs_neurons, Connections&connections)> propagation, std::function<double(double&input)> activation, std::function<double(double&input)> output)
+{
+	this->propagationFunction = propagation;
+	this->activationFunction = activation;
+	this->outputFunction = output;
 }
 
 void Perceptron::setNeuronId(int id)

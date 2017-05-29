@@ -37,7 +37,7 @@ void NeuralNetwork::defineFeedForwardNetwork(std::vector<int> layer_topology)
 	this->network_topology = layer_topology;
 
 	#ifdef DEBUG
-	std::cout << "[+] NNE: Feedforward layer toology has been defined: " << std::endl;
+	std::cout << "[+] NNE: Feedforward layer toology has been defined: ";
 	std::cout << "[=] { ";
 	for (int value: this->network_topology)
 		std::cout << value << " ";
@@ -61,53 +61,73 @@ void NeuralNetwork::setToUseBiasNeurons(bool useBias)
 	this->use_biases = useBias;
 }
 
-// Build the neurons and network topology - load all elements needed for network to run
-void NeuralNetwork::buildNeurons()
+void NeuralNetwork::setNeuronType(int type)
 {
-	#ifdef DEBUG
-	std::cout << "[=] NNE: Loading neurons to memory..." << std::endl;
-	#endif // DEBUG
+	this->neuron_type = type;
+}
 
-	if(this->topology == FEEDFORWARD_STANDART ||
-		this->topology == FEEDFORWARD_SHORTCUT_CONNECTIONS ||
-		this->topology == FEEDFORWARD_DIRECT_RECURRENCE ||
-		this->topology == FEEDFORWARD_INDIRECT_RECURRENCE ||
-		this->topology == FEEDFORWARD_LATERAL_RECURRENCE)
-		this->buildFeedforwardNet();
+void NeuralNetwork::setNeuronType(Perceptron& my)
+{
+	this->user_defined = &my;
+}
 
-	if(this->topology == COMPLETE_INTERCONNECTION)
-		this->buildInterconnectedNet();
+void NeuralNetwork::setNetworkTopology(int network_topology)
+{
+	this->topology = network_topology;
 
 	#ifdef DEBUG
-	std::cout << "[+] NNE: Loaded to memory." << std::endl << std::endl;
+	std::cout << "[+] NNE: Network has been defined" << std::endl << std::endl;
 	#endif // DEBUG
 }
 
-// Create connections and load them to memory
-void NeuralNetwork::buildConnections()
+int NeuralNetwork::getNeuronType()
+{
+	return this->neuron_type;
+}
+
+int NeuralNetwork::getNetworkTopology()
+{
+	return this->topology;
+}
+
+bool NeuralNetwork::isBiasUsed()
+{
+	return this->use_biases;
+}
+
+// Initialize network and load data to memory
+void NeuralNetwork::initialize()
 {
 	#ifdef DEBUG
-	std::cout << "[=] NNE: Loading connections to memory" << std::endl;
+	std::cout << "[=] NNE: Loading network to memory" << std::endl;
+	// Get the start time
+	int start = clock();
 	#endif // DEBUG
 
 	switch (this->topology)
 	{
 	case FEEDFORWARD_STANDART:
+		this->buildFeedforwardNet();
 		this->standartFeedforwardConnections();
 		break;
 	case FEEDFORWARD_SHORTCUT_CONNECTIONS:
+		this->buildFeedforwardNet();
 		this->shortcutFeedforwardConnections();
 		break;
 	case FEEDFORWARD_DIRECT_RECURRENCE:
+		this->buildFeedforwardNet();
 		this->directRecurrenceFeedforwardConnections();
 		break;
 	case FEEDFORWARD_INDIRECT_RECURRENCE:
+		this->buildFeedforwardNet();
 		this->indirectRecurrenceFeedforwardConnections();
 		break;
 	case FEEDFORWARD_LATERAL_RECURRENCE:
+		this->buildFeedforwardNet();
 		this->lateralFeedforwardConnections();
 		break;
 	case COMPLETE_INTERCONNECTION:
+		this->buildInterconnectedNet();
 		this->completeInterconnections();
 		break;
 	default:
@@ -115,7 +135,56 @@ void NeuralNetwork::buildConnections()
 	}
 
 	#ifdef DEBUG
-	std::cout << "[+] NNE: Connections have been loaded." << std::endl << std::endl;
+	std::cout << "[+] NNE: Connections have been loaded." << std::endl;
+	// Return time needed for operation to complete
+	std::cout << "OP Time (ms): " << clock() - start << std::endl << std::endl;
+	#endif // DEBUG
+}
+
+void NeuralNetwork::RunNetwork(std::vector<double>& inputs)
+{
+	#ifdef DEBUG
+	std::cout << "[=] NNE: Running network..." << std::endl;
+	// Get the start time
+	int start = clock();
+	#endif // DEBUG
+
+	// Clear last output
+	if(!this->lastOutput.empty()) this->lastOutput.clear();
+
+	// Assign inputs into first layer
+	#pragma omp parallel for
+	for (int input = 0; input < inputs.size(); input++)
+		this->feedforward_layers[0][input].RunNeuron(inputs[input]);
+
+	// Loop through first layer and put inputs
+	for (int op_layer = 1; op_layer < this->feedforward_layers.size(); op_layer++)
+	{
+		// Apply each neuron's calculation
+		#pragma omp parallel for
+		for (int op_neuron = 0; op_neuron < this->feedforward_layers[op_layer].size(); op_neuron++)
+		{
+			// Run each neuron on preceding layer
+			this->feedforward_layers[op_layer][op_neuron].RunNeuron(this->feedforward_layers[op_layer - 1]);
+		}
+	}
+
+	// Get output from last layer
+	for (Perceptron& out : this->feedforward_layers[this->feedforward_layers.size() - 1])
+		this->lastOutput.push_back(out.getOutput());
+
+	#ifdef DEBUG
+	std::cout << "[+] NNE: Run finished successfully." << std::endl;
+	std::cout << "[+] Inputs: { ";
+	for (double o : inputs)
+		std::cout << o << " ";
+	std::cout << "}" << std::endl;
+	std::cout << "[+] Outputs: { ";
+	for (double o : this->lastOutput)
+		std::cout << o << " ";
+	std::cout << "}" << std::endl;
+	// Return time needed for operation to complete
+	std::cout << "OP Time (ms): " << clock() - start << std::endl << std::endl;
 	#endif // DEBUG
 }
 
@@ -133,16 +202,25 @@ void NeuralNetwork::buildFeedforwardNet()
 		// Add neurons for layer
 		for (int perceptronNum = 0; perceptronNum < this->network_topology[layerNum]; perceptronNum++)
 		{
-			// Create a neuron, add ID and push it to neurons array
-			Perceptron temp = layerNum == 0 ? Perceptron(INPUT_NEURON) : Perceptron();
+			// Create a neuron
+			Perceptron temp;
+
+			// If perceptron is user defined then act accordingly
+			if (layerNum == 0)
+				temp = Perceptron(INPUT_NEURON);
+			else
+			{
+				if (this->user_defined != NULL)
+					temp.setNeuronFunctions(this->user_defined->getPropagationFunction(),
+						this->user_defined->getActivationFunction(),
+						this->user_defined->getOutputFunction());
+				else
+					temp = Perceptron(this->neuron_type);
+			}
+
+			// Add neuron with ID
 			temp.setNeuronId(neuron_id);
 			this->feedforward_layers.back().push_back(temp);
-
-			// Used for debugging
-			#ifdef DEBUG
-			if (layerNum == 0) std::cout << "[+] NNE: Input neuron Has been created - " << neuron_id << std::endl;
-			else std::cout << "[+] NNE: Empty neuron Has been created - " << neuron_id << std::endl;
-			#endif // DEBUG
 
 			// Next neuron Id
 			neuron_id++;
@@ -154,11 +232,6 @@ void NeuralNetwork::buildFeedforwardNet()
 			Perceptron temp = Perceptron(BIAS_NEURON);
 			temp.setNeuronId(neuron_id);
 			this->feedforward_layers.back().push_back(temp);
-
-			// Used for debugging
-			#ifdef DEBUG
-			std::cout << "[+] NNE: Bias neuron Has been created - " << neuron_id << std::endl;
-			#endif // DEBUG
 
 			// Next neuron Id
 			neuron_id++;
@@ -172,32 +245,29 @@ void NeuralNetwork::buildFeedforwardNet()
 void NeuralNetwork::buildInterconnectedNet()
 {
 	// Loop through neuron's number
+	#pragma omp parallel for
 	for (int neuronNum = 0; neuronNum < this->num_of_neurons; neuronNum++)
 	{
 		// Create a neuron and add to list
-		Perceptron temp = Perceptron();
+		Perceptron temp = Perceptron(this->neuron_type);
 		temp.setNeuronId(neuronNum);
 		this->neurons.push_back(temp);
-
-		#ifdef DEBUG
-		std::cout << "[+] NNE: Empty neuron Has been created - " << neuronNum << std::endl;
-		#endif // DEBUG
 	}
 
+	// We want to run the preceding code only one time
+	omp_set_num_threads(1);
 	// If users defined to use a bias neuron - add it
-	if (this->use_biases)
+	#pragma omp parallel
 	{
-		Perceptron temp = Perceptron(BIAS_NEURON);
-		temp.setNeuronId(this->num_of_neurons);
-		this->neurons.push_back(temp);
+		if (this->use_biases)
+		{
+			Perceptron temp = Perceptron(BIAS_NEURON);
+			temp.setNeuronId(this->num_of_neurons);
+			this->neurons.push_back(temp);
 
-		// Used for debugging
-		#ifdef DEBUG
-		std::cout << "[+] NNE: Bias neuron Has been created - " << this->num_of_neurons << std::endl;
-		#endif // DEBUG
-
-		// Increase number of neurons
-		this->num_of_neurons++;
+			// Increase number of neurons
+			this->num_of_neurons++;
+		}
 	}
 }
 
@@ -221,16 +291,6 @@ void NeuralNetwork::standartFeedforwardConnections()
 				Connection temp_connection;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 		}
 	}
@@ -248,6 +308,7 @@ void NeuralNetwork::directRecurrenceFeedforwardConnections()
 	for (int layerNum = 1; layerNum < this->feedforward_layers.size(); layerNum++)
 	{
 		// Get each neuron and assign him connections by previous layer
+		#pragma omp parallel for
 		for (int neuronNum = 0; neuronNum < this->feedforward_layers[layerNum].size(); neuronNum++)
 		{
 			// If a bias neuron then break
@@ -261,32 +322,12 @@ void NeuralNetwork::directRecurrenceFeedforwardConnections()
 				Connection temp_connection;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 
 			// Add connection to itself
 			Connection temp_connection;
 			temp_connection.weight = NeuralNetwork::getRandomWeight();
 			this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum][neuronNum].getNeuronId(), temp_connection);
-
-			#ifdef DEBUG
-			std::cout << "[=] Connection: "
-				<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-				<< " |=> "
-				<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-				<< " - w: "
-				<< temp_connection.weight
-				<< std::endl;
-			#endif // DEBUG
 		}
 	}
 }
@@ -297,6 +338,7 @@ void NeuralNetwork::indirectRecurrenceFeedforwardConnections()
 	// Loop through the layers with active neurons - skip input layer
 	for (int layerNum = 1; layerNum < this->feedforward_layers.size(); layerNum++)
 	{
+	#pragma omp parallel for
 		// Get each neuron and assign him connections by previous layer
 		for (int neuronNum = 0; neuronNum < this->feedforward_layers[layerNum].size(); neuronNum++)
 		{
@@ -308,34 +350,13 @@ void NeuralNetwork::indirectRecurrenceFeedforwardConnections()
 			for (int prevNeuron = 0; prevNeuron < this->feedforward_layers[layerNum - 1].size(); prevNeuron++)
 			{
 				// Create a connection, assign a random weight & add to neuron's connections
-				Connection temp_connection;
+				Connection temp_connection, temp_connection_indirect;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
 
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
-
 				// Add a connection to the opposing side to create the indirect recurrence network
-				Connection temp_connection_indirect;
 				temp_connection_indirect.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum - 1][prevNeuron].addConnection(this->feedforward_layers[layerNum][neuronNum].getNeuronId(), temp_connection_indirect);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId()
-					<< " - w: "
-					<< temp_connection_indirect.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 
 			// Add connection to itself
@@ -352,6 +373,7 @@ void NeuralNetwork::lateralFeedforwardConnections()
 	// Loop through the layers with active neurons - skip input layer
 	for (int layerNum = 1; layerNum < this->feedforward_layers.size(); layerNum++)
 	{
+		#pragma omp parallel for
 		// Get each neuron and assign him connections by previous layer
 		for (int neuronNum = 0; neuronNum < this->feedforward_layers[layerNum].size(); neuronNum++)
 		{
@@ -370,16 +392,6 @@ void NeuralNetwork::lateralFeedforwardConnections()
 				Connection temp_connection;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum][inLayerNum].getNeuronId(), temp_connection);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum][inLayerNum].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 
 			// Loop through previous layer
@@ -389,16 +401,6 @@ void NeuralNetwork::lateralFeedforwardConnections()
 				Connection temp_connection;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->feedforward_layers[layerNum][neuronNum].addConnection(this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->feedforward_layers[layerNum - 1][prevNeuron].getNeuronId()
-					<< " |=> "
-					<< this->feedforward_layers[layerNum][neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 		}
 	}
@@ -410,6 +412,7 @@ void NeuralNetwork::completeInterconnections()
 	// Loop through all neuron
 	for (int neuronNum = 0; neuronNum < this->num_of_neurons; neuronNum++)
 	{
+		#pragma omp parallel for
 		// For each neuron loop through all other neurons - to create complete interconnections
 		for (int connNum = neuronNum + 1; connNum < this->num_of_neurons; connNum++)
 		{
@@ -420,16 +423,6 @@ void NeuralNetwork::completeInterconnections()
 				Connection temp_connection_reverse;
 				temp_connection_reverse.weight = NeuralNetwork::getRandomWeight();
 				this->neurons[connNum].addConnection(this->neurons[neuronNum].getNeuronId(), temp_connection_reverse);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->neurons[neuronNum].getNeuronId()
-					<< " |=> "
-					<< this->neurons[connNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection_reverse.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 
 			// A bias neuron can't get inputs
@@ -438,16 +431,6 @@ void NeuralNetwork::completeInterconnections()
 				Connection temp_connection;
 				temp_connection.weight = NeuralNetwork::getRandomWeight();
 				this->neurons[neuronNum].addConnection(this->neurons[connNum].getNeuronId(), temp_connection);
-
-				#ifdef DEBUG
-				std::cout << "[=] Connection: "
-					<< this->neurons[connNum].getNeuronId()
-					<< " |=> "
-					<< this->neurons[neuronNum].getNeuronId()
-					<< " - w: "
-					<< temp_connection.weight
-					<< std::endl;
-				#endif // DEBUG
 			}
 		}
 	}

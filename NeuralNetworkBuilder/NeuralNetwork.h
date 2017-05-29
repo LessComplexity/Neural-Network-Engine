@@ -24,12 +24,22 @@ public:
 	// Class functions
 	void defineFeedForwardNetwork(std::vector<int> layer_topology);
 	void defineInterconnectedNetwork(int number_of_neurons);
-	void setToUseBiasNeurons(bool useBias);
-	void buildNeurons();
-	void buildConnections();
+	void initialize();
+	void RunNetwork(std::vector<double>& inputs);
 
 	// Function to get random weight
 	static double getRandomWeight() { return rand() / double(RAND_MAX); }
+
+	// Setters
+	void setToUseBiasNeurons(bool useBias);	
+	void setNeuronType(int type);
+	void setNetworkTopology(int network_topology);
+	void setNeuronType(Perceptron& my);
+
+	// Getters
+	int getNeuronType();
+	int getNetworkTopology();
+	bool isBiasUsed();
 private:
 	// A viable that stores the topology type of the network
 	unsigned short topology;
@@ -38,11 +48,20 @@ private:
 	// A layer which is defined for a feedforward network topology
 	std::vector<Layer> feedforward_layers;
 
+	// Vector that stores the last output
+	std::vector<double> lastOutput;
+
+	// User defined neuron type
+	int neuron_type = FEEDFORWARD_STANDART;
+
 	// Container of all neurons for a complete interconnection case
 	Layer neurons;
 
 	// Indicates to use a bias neuron
 	bool use_biases;
+
+	// Set user defined neuron
+	Perceptron * user_defined = NULL;
 
 	// Stores all the neurons in the net
 	int num_of_neurons = 0;

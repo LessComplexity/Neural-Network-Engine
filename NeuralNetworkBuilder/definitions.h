@@ -18,6 +18,9 @@
 #include <exception>
 #include <map>
 #include <math.h>
+#include <omp.h>
+#include <time.h>
+#include <CL\cl.hpp>
 
 // ************************************************************ //
 // ********************** Define Helpers ********************** //

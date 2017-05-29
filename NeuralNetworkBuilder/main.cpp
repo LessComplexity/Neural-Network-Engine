@@ -4,12 +4,29 @@
 int main()
 {
 	// Only for testing right now...
-	NeuralNetwork nn(FEEDFORWARD_DIRECT_RECURRENCE);
-	nn.setToUseBiasNeurons(true);
-	nn.defineFeedForwardNetwork({3, 3, 3, 2});
+	
+	// Create a network holder object with the network's architechture
+	NeuralNetwork nn(FEEDFORWARD_STANDART);
 
-	nn.buildNeurons();
-	nn.buildConnections();
+	// Set a neuron type to use for the network
+	nn.setNeuronType(STANDART_NEURON_FREMI);
+
+	// Set to use bias neurons
+	nn.setToUseBiasNeurons(true);
+
+	// Add network topology
+	nn.defineFeedForwardNetwork({ 50, 50, 45, 40, 35, 30, 25, 20, 15, 10 });
+
+	// Initialize network
+	nn.initialize();
+
+	// Generate random inputs
+	std::vector<double> inputs;
+	for (int i = 0; i < 50; i++)
+		inputs.push_back(NeuralNetwork::getRandomWeight());
+
+	// Insert input and run network
+	nn.RunNetwork(inputs);
 
 	return 0;
 }
