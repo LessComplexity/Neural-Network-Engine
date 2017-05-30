@@ -32,7 +32,7 @@
 // ********************** Define Classes ********************** //
 // ************************************************************ //
 
-class Perceptron;
+class Neuron;
 class NeuralNetwork;
 
 // ************************************************************ //
@@ -48,8 +48,8 @@ struct Connection {
 // Connections[i][j] = The connection between neuron i & j
 typedef std::map<int, Connection> Connections;
 
-// Layer defines a line of neuron/perceptrons - used for a feedforward network topology
-typedef std::vector<Perceptron> Layer;
+// Layer defines a line of neuron/Neurons - used for a feedforward network topology
+typedef std::vector<Neuron> Layer;
 
 
 // ************************************************************ //

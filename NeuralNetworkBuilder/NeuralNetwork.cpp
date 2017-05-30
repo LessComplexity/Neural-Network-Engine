@@ -66,7 +66,7 @@ void NeuralNetwork::setNeuronType(int type)
 	this->neuron_type = type;
 }
 
-void NeuralNetwork::setNeuronType(Perceptron& my)
+void NeuralNetwork::setNeuronType(Neuron& my)
 {
 	this->user_defined = &my;
 }
@@ -161,7 +161,7 @@ void NeuralNetwork::RunNetwork(std::vector<double>& inputs)
 	for (int op_layer = 1; op_layer < this->feedforward_layers->size(); op_layer++)
 	{
 		// Apply each neuron's calculation
-		#pragma omp parallel for
+		#pragma omp parallel for num_threads(8)
 		for (int op_neuron = 0; op_neuron < (*(this->feedforward_layers))[op_layer].size(); op_neuron++)
 		{
 			// Run each neuron on preceding layer
@@ -170,15 +170,15 @@ void NeuralNetwork::RunNetwork(std::vector<double>& inputs)
 	}
 
 	// Get output from last layer
-	for (Perceptron& out : (*(this->feedforward_layers))[this->feedforward_layers->size() - 1])
+	for (Neuron& out : (*(this->feedforward_layers))[this->feedforward_layers->size() - 1])
 		this->lastOutput.push_back(out.getOutput());
 
 	#ifdef DEBUG
 	std::cout << "[+] NNE: Run finished successfully." << std::endl;
-	std::cout << "[+] Inputs: { ";
-	for (double o : inputs)
-		std::cout << o << " ";
-	std::cout << "}" << std::endl;
+	//std::cout << "[+] Inputs: { ";
+	//for (double o : inputs)
+//		std::cout << o << " ";
+//	std::cout << "}" << std::endl;
 	std::cout << "[+] Outputs: { ";
 	for (double o : this->lastOutput)
 		std::cout << o << " ";
@@ -200,14 +200,14 @@ void NeuralNetwork::buildFeedforwardNet()
 		(*(this->feedforward_layers)).push_back(Layer());
 
 		// Add neurons for layer
-		for (int perceptronNum = 0; perceptronNum < this->network_topology[layerNum]; perceptronNum++)
+		for (int NeuronNum = 0; NeuronNum < this->network_topology[layerNum]; NeuronNum++)
 		{
 			// Create a neuron
-			Perceptron temp;
+			Neuron temp;
 
-			// If perceptron is user defined then act accordingly
+			// If Neuron is user defined then act accordingly
 			if (layerNum == 0)
-				temp = Perceptron(INPUT_NEURON);
+				temp = Neuron(INPUT_NEURON);
 			else
 			{
 				if (this->user_defined != NULL)
@@ -215,7 +215,7 @@ void NeuralNetwork::buildFeedforwardNet()
 						this->user_defined->getActivationFunction(),
 						this->user_defined->getOutputFunction());
 				else
-					temp = Perceptron(this->neuron_type);
+					temp = Neuron(this->neuron_type);
 			}
 
 			// Add neuron with ID
@@ -229,7 +229,7 @@ void NeuralNetwork::buildFeedforwardNet()
 		// If users defined to use a bias neuron - add it
 		if (this->use_biases && layerNum != this->network_topology.size() - 1)
 		{
-			Perceptron temp = Perceptron(BIAS_NEURON);
+			Neuron temp = Neuron(BIAS_NEURON);
 			temp.setNeuronId(neuron_id);
 			(*(this->feedforward_layers)).back().push_back(temp);
 
@@ -249,7 +249,7 @@ void NeuralNetwork::buildInterconnectedNet()
 	for (int neuronNum = 0; neuronNum < this->num_of_neurons; neuronNum++)
 	{
 		// Create a neuron and add to list
-		Perceptron temp = Perceptron(this->neuron_type);
+		Neuron temp = Neuron(this->neuron_type);
 		temp.setNeuronId(neuronNum);
 		this->neurons.push_back(temp);
 	}
@@ -261,7 +261,7 @@ void NeuralNetwork::buildInterconnectedNet()
 	{
 		if (this->use_biases)
 		{
-			Perceptron temp = Perceptron(BIAS_NEURON);
+			Neuron temp = Neuron(BIAS_NEURON);
 			temp.setNeuronId(this->num_of_neurons);
 			this->neurons.push_back(temp);
 
@@ -278,7 +278,7 @@ void NeuralNetwork::standartFeedforwardConnections()
 	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
 	{
 		// Get each neuron and assign him connections by previous layer
-		#pragma omp parallel for
+		#pragma omp parallel for num_threads(8)
 		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
 		{
 			// If a bias neuron then break

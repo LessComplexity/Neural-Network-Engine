@@ -12,7 +12,7 @@
 /****************************************************************************************************************/
 
 #pragma once
-#include "Perceptron.h"
+#include "Neuron.h"
 
 class NeuralNetwork
 {
@@ -34,7 +34,7 @@ public:
 	void setToUseBiasNeurons(bool useBias);	
 	void setNeuronType(int type);
 	void setNetworkTopology(int network_topology);
-	void setNeuronType(Perceptron& my);
+	void setNeuronType(Neuron& my);
 
 	// Getters
 	int getNeuronType();
@@ -61,7 +61,7 @@ private:
 	bool use_biases;
 
 	// Set user defined neuron
-	Perceptron * user_defined = NULL;
+	Neuron * user_defined = NULL;
 
 	// Stores all the neurons in the net
 	int num_of_neurons = 0;

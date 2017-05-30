@@ -42,6 +42,5 @@ int main()
 	// Insert input and run network
 	nn->RunNetwork(inputs);
 
-	delete nn;
 	return 0;
 }
