@@ -19,30 +19,43 @@ class NeuralNetwork
 public:
 	NeuralNetwork();
 	NeuralNetwork(int network_topology);
+	// Set as virtual to despose of data quickly
 	virtual ~NeuralNetwork();
 
-	// Class functions
+	/* Class functions */
+	// Define the network topology in case of feedforward
 	void defineFeedForwardNetwork(std::vector<int> layer_topology);
+	// Define number of neurons in case of an interconnected network
 	void defineInterconnectedNetwork(int number_of_neurons);
+	// Initialize and build the network after eveything is set up
 	void initialize();
+	// Run the network with certain outputs
 	void RunNetwork(std::vector<double>& inputs);
 
 	// Function to get random weight
 	static double getRandomWeight() { return rand() / double(RAND_MAX); }
 
-	// Setters
+	/* Setters */
+	// Notify network to create a bias neuron to change the threshold of each neuron
 	void setToUseBiasNeurons(bool useBias);	
+	// Set neuron type the user wants the network to work with
 	void setNeuronType(int type);
+	// Set the topology in which a feedforward network is to be created
 	void setNetworkTopology(int network_topology);
+	// Set neuron type by a user defined neuron
 	void setNeuronType(Neuron& my);
 
-	// Getters
+	/* Getters */
+	// Get the neuron type the network uses
 	int getNeuronType();
+	// Get the network topology that has been defined earlier
 	int getNetworkTopology();
+	// Returns true is a bias neuron is used
 	bool isBiasUsed();
 private:
 	// A viable that stores the topology type of the network
 	unsigned short topology;
+	// Stores the network topology for a feedforward network
 	std::vector<int> network_topology;
 
 	// A layer which is defined for a feedforward network topology
@@ -66,13 +79,21 @@ private:
 	// Stores all the neurons in the net
 	int num_of_neurons = 0;
 
-	// Private builder functions
+	/* Private builder functions */
+	// Build network as feedforward
 	void buildFeedforwardNet();
+	// Build network as interconnected
 	void buildInterconnectedNet();
+	// Create standard feedforward network connections
 	void standartFeedforwardConnections();
+	// Create shotcut feedforward network connections
 	void shortcutFeedforwardConnections();
+	// Create direct recurrence feedforward network connections
 	void directRecurrenceFeedforwardConnections();
+	// Create indirect recurrence feedforward network connections
 	void indirectRecurrenceFeedforwardConnections();
+	// Create lateral feedforward network connections
 	void lateralFeedforwardConnections();
+	// Create complete interconnections
 	void completeInterconnections();
 };

@@ -59,15 +59,15 @@ Neuron::~Neuron()
 void Neuron::RunNeuron(Layer& inputs_neurons)
 {
 	// Store network input, actvation value & output
-	this->network_input = this->propagationFunction(inputs_neurons, this->connections);
-	this->activated_input = this->activationFunction(this->network_input);
+	this->neuron_input = this->propagationFunction(inputs_neurons, this->connections);
+	this->activated_input = this->activationFunction(this->neuron_input);
 	this->output = this->outputFunction(activated_input);
 }
 
 // Run a neuron as an input neuron
 void Neuron::RunNeuron(double input)
 {
-	this->network_input = this->activated_input = this->output = this->outputFunction(activated_input);
+	this->neuron_input = this->activated_input = this->output = this->outputFunction(activated_input);
 }
 
 // Define neuron as a bias neuron
@@ -220,21 +220,25 @@ void Neuron::asStandartFermi(Neuron* neuron)
 	);
 }
 
+// Add a connection to the neuron
 void Neuron::addConnection(int neuron_id, Connection toadd)
 {
 	this->connections.insert_or_assign(neuron_id, toadd);
 }
 
+// Returns the propagation function of the neuron
 std::function<double(Layer&inputs_neurons, Connections&connections)> Neuron::getPropagationFunction()
 {
 	return this->propagationFunction;
 }
 
+// Returns the activation function of the neuron
 std::function<double(double&input)> Neuron::getActivationFunction()
 {
 	return this->activationFunction;
 }
 
+// Returns the output function of the neuron
 std::function<double(double&input)> Neuron::getOutputFunction()
 {
 	return this->outputFunction;
@@ -278,9 +282,9 @@ void Neuron::setConnections(Connections connections)
 
 
 // Get the nework input
-double Neuron::getNetworkInput()
+double Neuron::getNeuronInput()
 {
-	return this->network_input;
+	return this->neuron_input;
 }
 
 // Get the activation input

@@ -278,7 +278,7 @@ void NeuralNetwork::standartFeedforwardConnections()
 	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
 	{
 		// Get each neuron and assign him connections by previous layer
-		#pragma omp parallel for num_threads(8)
+		#pragma omp parallel for num_threads(16)
 		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
 		{
 			// If a bias neuron then break
