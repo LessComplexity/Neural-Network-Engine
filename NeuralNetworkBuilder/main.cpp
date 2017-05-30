@@ -36,7 +36,7 @@ int main()
 
 	// Generate random inputs
 	std::vector<double> inputs;
-	for (int i = 0; i < 50; i++)
+	for (int i = 0; i < 50000; i++)
 		inputs.push_back(NeuralNetwork::getRandomWeight());
 
 	// Insert input and run network
