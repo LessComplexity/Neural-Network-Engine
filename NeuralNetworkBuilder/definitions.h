@@ -12,6 +12,7 @@
 /****************************************************************************************************************/
 
 #pragma once
+// General nesseccery includes
 #include <iostream>
 #include <vector>
 #include <functional>
@@ -20,13 +21,53 @@
 #include <math.h>
 #include <omp.h>
 #include <time.h>
+#include <thread>
+#include <fstream>
+#include <random>
+
+// Include OpenCL & OpenGL
+#ifdef MAC
+#include <OpenCL/cl.h>
+#else
+#include <CL\cl.h>
 #include <CL\cl.hpp>
+#include <GL\glew.h>
+#include <GLFW\glfw3.h>
+#endif
 
 // ************************************************************ //
 // ********************** Define Helpers ********************** //
 // ************************************************************ //
 
-#define DEBUG
+#define		DEBUG
+#define		RAND_MAXIMUM		0x0000FFFF
+
+static void pause()
+{
+#ifdef MAC
+	system("read");
+#else
+	system("pause");
+#endif
+}
+
+// Seed with a real random value, if available
+static std::random_device r;
+//Function to get random number
+static std::default_random_engine engine(r());
+static std::uniform_int_distribution<int> uniform_dist(-RAND_MAXIMUM, RAND_MAXIMUM);
+
+static int RandomNumber()
+{
+	return uniform_dist(engine);
+}
+
+// ************************************************************** //
+// ********************** Define Simulator ********************** //
+// ************************************************************** //
+
+class Drawable;
+class NeuralSimulator;
 
 // ************************************************************ //
 // ********************** Define Classes ********************** //
@@ -51,6 +92,27 @@ typedef std::map<int, Connection> Connections;
 // Layer defines a line of neuron/Neurons - used for a feedforward network topology
 typedef std::vector<Neuron> Layer;
 
+// A point of 4 vertices (x, y, z, w)
+struct Point {
+	GLfloat x, y, z, w;
+	GLfloat operator[] (int n) {
+		switch (n)
+		{
+		case 0:
+			return this->x;
+		case 1:
+			return this->y;
+		case 2:
+			return this->z;
+		case 3:
+			return this->w;
+		default:
+			return NULL;
+		}
+	}
+};
+
+typedef std::vector<Point> Vertices;
 
 // ************************************************************ //
 // ********************* Define Topologies ******************** //
@@ -72,5 +134,5 @@ typedef std::vector<Neuron> Layer;
 #define		INPUT_NEURON						0x000008
 #define		STANDART_NEURON						0x000009
 #define		STANDART_NEURON_HEAVISIDE			0x00000A
-#define		STANDART_NEURON_FREMI				0x00000B
+#define		STANDART_NEURON_FERMI				0x00000B
 #define		STANDART_NEURON_HYPERBOLIC			0x00000C

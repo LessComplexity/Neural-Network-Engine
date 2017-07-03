@@ -15,4 +15,6 @@
 
 // This file connects all the headers needed for the neural network engine to work
 
+#include "definitions.h"
+#include "NeuralSimulator.h"
 #include "NeuralNetwork.h"

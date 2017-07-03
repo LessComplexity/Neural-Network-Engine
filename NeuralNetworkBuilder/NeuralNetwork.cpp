@@ -29,6 +29,7 @@ NeuralNetwork::NeuralNetwork(int network_topology)
 
 NeuralNetwork::~NeuralNetwork()
 {
+	this->stopSimulator();
 }
 
 // Define the topology layers & their neurons
@@ -155,30 +156,26 @@ void NeuralNetwork::RunNetwork(std::vector<double>& inputs)
 	// Assign inputs into first layer
 	#pragma omp parallel for
 	for (int input = 0; input < inputs.size(); input++)
-		(*(this->feedforward_layers))[0][input].RunNeuron(inputs[input]);
+		this->feedforward_layers->at(0)[input].RunNeuron(inputs[input]);
 
-	// Loop through first layer and put inputs
+	// Loop through layers and run the neurons
 	for (int op_layer = 1; op_layer < this->feedforward_layers->size(); op_layer++)
 	{
 		// Apply each neuron's calculation
 		#pragma omp parallel for num_threads(8)
-		for (int op_neuron = 0; op_neuron < (*(this->feedforward_layers))[op_layer].size(); op_neuron++)
+		for (int op_neuron = 0; op_neuron < this->feedforward_layers->at(op_layer).size(); op_neuron++)
 		{
-			// Run each neuron on preceding layer
-			(*(this->feedforward_layers))[op_layer][op_neuron].RunNeuron((*(this->feedforward_layers))[op_layer - 1]);
+			// Run each neuron on preceding layer 
+			this->feedforward_layers->at(op_layer)[op_neuron].RunNeuron(this->feedforward_layers->at(op_layer - 1));
 		}
 	}
 
 	// Get output from last layer
-	for (Neuron& out : (*(this->feedforward_layers))[this->feedforward_layers->size() - 1])
+	for (Neuron& out : this->feedforward_layers->at(this->feedforward_layers->size() - 1))
 		this->lastOutput.push_back(out.getOutput());
 
 	#ifdef DEBUG
 	std::cout << "[+] NNE: Run finished successfully." << std::endl;
-	//std::cout << "[+] Inputs: { ";
-	//for (double o : inputs)
-//		std::cout << o << " ";
-//	std::cout << "}" << std::endl;
 	std::cout << "[+] Outputs: { ";
 	for (double o : this->lastOutput)
 		std::cout << o << " ";
@@ -186,6 +183,35 @@ void NeuralNetwork::RunNetwork(std::vector<double>& inputs)
 	// Return time needed for operation to complete
 	std::cout << "OP Time (ms): " << clock() - start << std::endl << std::endl;
 	#endif // DEBUG
+}
+
+void NeuralNetwork::startSimulator(const char * window_title, int width, int height, bool full_screen)
+{
+	simulator_thread = std::thread([window_title, width, height, full_screen]() {
+		NeuralSimulator * simulator = new NeuralSimulator();
+
+		// Set OGL version
+		simulator->setOGLVersion(4, 3);
+
+		simulator->createWindow(window_title, width, height, full_screen);
+
+		simulator->createDrawingContext();
+		simulator->addDrawable({
+			{ -0.5f, -0.5f, 0.0f, 1.0f },
+			{ 0.5f, -0.5f, 0.0f, 1.0f },
+			{ 0.0f,  0.5f, 0.0f, 1.0f }
+		});
+
+		// Set program
+		simulator->setProgram(simulator->addShadingProgram("VertexShader.glsl", "FragmentShader.glsl"));
+
+		simulator->startRendering();
+	});
+}
+
+void NeuralNetwork::stopSimulator()
+{
+	simulator_thread.detach();
 }
 
 // Load to memory the feedforward network
@@ -197,30 +223,29 @@ void NeuralNetwork::buildFeedforwardNet()
 	for (int layerNum = 0; layerNum < this->network_topology.size(); layerNum++)
 	{
 		// Create layer
-		(*(this->feedforward_layers)).push_back(Layer());
+		this->feedforward_layers->push_back(Layer());
 
 		// Add neurons for layer
 		for (int NeuronNum = 0; NeuronNum < this->network_topology[layerNum]; NeuronNum++)
 		{
-			// Create a neuron
-			Neuron temp;
-
 			// If Neuron is user defined then act accordingly
 			if (layerNum == 0)
-				temp = Neuron(INPUT_NEURON);
+				this->feedforward_layers->back().push_back(Neuron(INPUT_NEURON));
 			else
 			{
 				if (this->user_defined != NULL)
-					temp.setNeuronFunctions(this->user_defined->getPropagationFunction(),
+				{
+					this->feedforward_layers->back().push_back(Neuron());
+					this->feedforward_layers->back().back().setNeuronFunctions(this->user_defined->getPropagationFunction(),
 						this->user_defined->getActivationFunction(),
 						this->user_defined->getOutputFunction());
+				}
 				else
-					temp = Neuron(this->neuron_type);
+					this->feedforward_layers->back().push_back(Neuron(this->neuron_type));
 			}
 
-			// Add neuron with ID
-			temp.setNeuronId(neuron_id);
-			(*(this->feedforward_layers)).back().push_back(temp);
+			// Add ID
+			this->feedforward_layers->back().back().setNeuronId(neuron_id);
 
 			// Next neuron Id
 			neuron_id++;
@@ -229,10 +254,9 @@ void NeuralNetwork::buildFeedforwardNet()
 		// If users defined to use a bias neuron - add it
 		if (this->use_biases && layerNum != this->network_topology.size() - 1)
 		{
-			Neuron temp = Neuron(BIAS_NEURON);
-			temp.setNeuronId(neuron_id);
-			(*(this->feedforward_layers)).back().push_back(temp);
-
+			this->feedforward_layers->back().push_back(Neuron(BIAS_NEURON));
+			this->feedforward_layers->back().back().setNeuronId(neuron_id);
+			
 			// Next neuron Id
 			neuron_id++;
 		}
@@ -249,9 +273,8 @@ void NeuralNetwork::buildInterconnectedNet()
 	for (int neuronNum = 0; neuronNum < this->num_of_neurons; neuronNum++)
 	{
 		// Create a neuron and add to list
-		Neuron temp = Neuron(this->neuron_type);
-		temp.setNeuronId(neuronNum);
-		this->neurons.push_back(temp);
+		this->neurons.push_back(Neuron(this->neuron_type));
+		this->neurons.back().setNeuronId(neuronNum);
 	}
 
 	// We want to run the preceding code only one time
@@ -261,9 +284,8 @@ void NeuralNetwork::buildInterconnectedNet()
 	{
 		if (this->use_biases)
 		{
-			Neuron temp = Neuron(BIAS_NEURON);
-			temp.setNeuronId(this->num_of_neurons);
-			this->neurons.push_back(temp);
+			this->neurons.push_back(Neuron(BIAS_NEURON));
+			this->neurons.back().setNeuronId(this->num_of_neurons);
 
 			// Increase number of neurons
 			this->num_of_neurons++;
@@ -275,23 +297,21 @@ void NeuralNetwork::buildInterconnectedNet()
 void NeuralNetwork::standartFeedforwardConnections()
 {
 	// Loop through the layers with active neurons - skip input layer
-	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
+	for (int layerNum = 1; layerNum < this->feedforward_layers->size(); layerNum++)
 	{
 		// Get each neuron and assign him connections by previous layer
-		#pragma omp parallel for num_threads(16)
-		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
+		#pragma omp parallel for
+		for (int neuronNum = 0; neuronNum < this->feedforward_layers->at(layerNum).size(); neuronNum++)
 		{
 			// If a bias neuron then break
-			if ((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronType() != BIAS_NEURON)
+			if (this->feedforward_layers->at(layerNum)[neuronNum].getNeuronType() == BIAS_NEURON)
+				continue;
+
+			// Loop through previous layer
+			for (int prevNeuron = 0; prevNeuron < this->feedforward_layers->at(layerNum - 1).size(); prevNeuron++)
 			{
-				// Loop through previous layer
-				for (int prevNeuron = 0; prevNeuron < (*(this->feedforward_layers))[layerNum - 1].size(); prevNeuron++)
-				{
-					// Create a connection, assign a random weight & add to connections
-					Connection temp_connection;
-					temp_connection.weight = NeuralNetwork::getRandomWeight();
-					(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
-				}
+				// Create a connection, assign a random weight
+				this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum - 1)[prevNeuron].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 		}
 	}
@@ -306,29 +326,25 @@ void NeuralNetwork::shortcutFeedforwardConnections()
 void NeuralNetwork::directRecurrenceFeedforwardConnections()
 {
 	// Loop through the layers with active neurons - skip input layer
-	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
+	for (int layerNum = 1; layerNum < this->feedforward_layers->size(); layerNum++)
 	{
 		// Get each neuron and assign him connections by previous layer
 		#pragma omp parallel for
-		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
+		for (int neuronNum = 0; neuronNum < this->feedforward_layers->at(layerNum).size(); neuronNum++)
 		{
 			// If a bias neuron then break
-			if ((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronType() == BIAS_NEURON)
+			if (this->feedforward_layers->at(layerNum)[neuronNum].getNeuronType() == BIAS_NEURON)
 				break;
 
 			// Loop through previous layer
-			for (int prevNeuron = 0; prevNeuron < (*(this->feedforward_layers))[layerNum - 1].size(); prevNeuron++)
+			for (int prevNeuron = 0; prevNeuron < this->feedforward_layers->at(layerNum - 1).size(); prevNeuron++)
 			{
 				// Create a connection, assign a random weight & add to connections
-				Connection temp_connection;
-				temp_connection.weight = NeuralNetwork::getRandomWeight();
-				(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
+				this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum - 1)[prevNeuron].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 
 			// Add connection to itself
-			Connection temp_connection;
-			temp_connection.weight = NeuralNetwork::getRandomWeight();
-			(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronId(), temp_connection);
+			this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum)[neuronNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 		}
 	}
 }
@@ -337,33 +353,28 @@ void NeuralNetwork::directRecurrenceFeedforwardConnections()
 void NeuralNetwork::indirectRecurrenceFeedforwardConnections()
 {
 	// Loop through the layers with active neurons - skip input layer
-	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
+	for (int layerNum = 1; layerNum < this->feedforward_layers->size(); layerNum++)
 	{
 		#pragma omp parallel for
 		// Get each neuron and assign him connections by previous layer
-		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
+		for (int neuronNum = 0; neuronNum < this->feedforward_layers->at(layerNum).size(); neuronNum++)
 		{
 			// If a bias neuron then break
-			if ((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronType() == BIAS_NEURON)
+			if (this->feedforward_layers->at(layerNum)[neuronNum].getNeuronType() == BIAS_NEURON)
 				break;
 
 			// Loop through previous layer
-			for (int prevNeuron = 0; prevNeuron < (*(this->feedforward_layers))[layerNum - 1].size(); prevNeuron++)
+			for (int prevNeuron = 0; prevNeuron < this->feedforward_layers->at(layerNum - 1).size(); prevNeuron++)
 			{
 				// Create a connection, assign a random weight & add to neuron's connections
-				Connection temp_connection, temp_connection_indirect;
-				temp_connection.weight = NeuralNetwork::getRandomWeight();
-				(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
+				this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum - 1)[prevNeuron].getNeuronId(), NeuralNetwork::getRandomWeight());
 
 				// Add a connection to the opposing side to create the indirect recurrence network
-				temp_connection_indirect.weight = NeuralNetwork::getRandomWeight();
-				(*(this->feedforward_layers))[layerNum - 1][prevNeuron].addConnection((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronId(), temp_connection_indirect);
+				this->feedforward_layers->at(layerNum - 1)[prevNeuron].addConnection(this->feedforward_layers->at(layerNum)[neuronNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 
 			// Add connection to itself
-			Connection temp_connection;
-			temp_connection.weight = NeuralNetwork::getRandomWeight();
-			(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronId(), temp_connection);
+			this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum)[neuronNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 		}
 	}
 }
@@ -372,36 +383,32 @@ void NeuralNetwork::indirectRecurrenceFeedforwardConnections()
 void NeuralNetwork::lateralFeedforwardConnections()
 {
 	// Loop through the layers with active neurons - skip input layer
-	for (int layerNum = 1; layerNum < (*(this->feedforward_layers)).size(); layerNum++)
+	for (int layerNum = 1; layerNum < this->feedforward_layers->size(); layerNum++)
 	{
 		#pragma omp parallel for
 		// Get each neuron and assign him connections by previous layer
-		for (int neuronNum = 0; neuronNum < (*(this->feedforward_layers))[layerNum].size(); neuronNum++)
+		for (int neuronNum = 0; neuronNum < this->feedforward_layers->at(layerNum).size(); neuronNum++)
 		{
 			// If a bias neuron then break
-			if ((*(this->feedforward_layers))[layerNum][neuronNum].getNeuronType() == BIAS_NEURON)
+			if (this->feedforward_layers->at(layerNum)[neuronNum].getNeuronType() == BIAS_NEURON)
 				break;
 
 			// Loop through the current layer to create make the lateral recurrence
-			for (int inLayerNum = 0; inLayerNum < (*(this->feedforward_layers))[layerNum].size(); inLayerNum++)
+			for (int inLayerNum = 0; inLayerNum < this->feedforward_layers->at(layerNum).size(); inLayerNum++)
 			{
 				// Jump to next step if the neuron is the same
 				if (inLayerNum == neuronNum)
 					continue;
 
 				// Create a connection, assign a random weight & add to connections
-				Connection temp_connection;
-				temp_connection.weight = NeuralNetwork::getRandomWeight();
-				(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum][inLayerNum].getNeuronId(), temp_connection);
+				this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum)[inLayerNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 
 			// Loop through previous layer
-			for (int prevNeuron = 0; prevNeuron < (*(this->feedforward_layers))[layerNum - 1].size(); prevNeuron++)
+			for (int prevNeuron = 0; prevNeuron < this->feedforward_layers->at(layerNum - 1).size(); prevNeuron++)
 			{
 				// Create a connection, assign a random weight & add to connections
-				Connection temp_connection;
-				temp_connection.weight = NeuralNetwork::getRandomWeight();
-				(*(this->feedforward_layers))[layerNum][neuronNum].addConnection((*(this->feedforward_layers))[layerNum - 1][prevNeuron].getNeuronId(), temp_connection);
+				this->feedforward_layers->at(layerNum)[neuronNum].addConnection(this->feedforward_layers->at(layerNum - 1)[prevNeuron].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 		}
 	}
@@ -421,17 +428,13 @@ void NeuralNetwork::completeInterconnections()
 			if (this->neurons[connNum].getNeuronType() != BIAS_NEURON)
 			{
 				// Create a connection, assign a random weight & add to connections
-				Connection temp_connection_reverse;
-				temp_connection_reverse.weight = NeuralNetwork::getRandomWeight();
-				this->neurons[connNum].addConnection(this->neurons[neuronNum].getNeuronId(), temp_connection_reverse);
+				this->neurons[connNum].addConnection(this->neurons[neuronNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 
 			// A bias neuron can't get inputs
 			if (this->neurons[neuronNum].getNeuronType() != BIAS_NEURON)
 			{
-				Connection temp_connection;
-				temp_connection.weight = NeuralNetwork::getRandomWeight();
-				this->neurons[neuronNum].addConnection(this->neurons[connNum].getNeuronId(), temp_connection);
+				this->neurons[neuronNum].addConnection(this->neurons[connNum].getNeuronId(), NeuralNetwork::getRandomWeight());
 			}
 		}
 	}

@@ -13,6 +13,7 @@
 
 #pragma once
 #include "Neuron.h"
+#include "NeuralSimulator.h"
 
 class NeuralNetwork
 {
@@ -31,9 +32,13 @@ public:
 	void initialize();
 	// Run the network with certain outputs
 	void RunNetwork(std::vector<double>& inputs);
+	// Start simulating
+	void startSimulator(const char* window_title, int width, int height, bool full_screen);
+	// Stop simulating
+	void stopSimulator();
 
 	// Function to get random weight
-	static double getRandomWeight() { return rand() / double(RAND_MAX); }
+	static double getRandomWeight() { return RandomNumber() / double(RAND_MAXIMUM); }
 
 	/* Setters */
 	// Notify network to create a bias neuron to change the threshold of each neuron
@@ -53,6 +58,9 @@ public:
 	// Returns true is a bias neuron is used
 	bool isBiasUsed();
 private:
+	// Simulator thread
+	std::thread simulator_thread;
+
 	// A viable that stores the topology type of the network
 	unsigned short topology;
 	// Stores the network topology for a feedforward network
@@ -96,4 +104,7 @@ private:
 	void lateralFeedforwardConnections();
 	// Create complete interconnections
 	void completeInterconnections();
+
+	/* Simulatoe functions */
+	void simulate(const char* window_title, int width, int height, bool full_screen);
 };
