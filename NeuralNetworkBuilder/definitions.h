@@ -75,6 +75,7 @@ class NeuralSimulator;
 
 class Neuron;
 class NeuralNetwork;
+class NetworkTrainer;
 
 // ************************************************************ //
 // ***************** Define Connections/Layers **************** //
@@ -91,6 +92,12 @@ typedef std::map<int, Connection> Connections;
 
 // Layer defines a line of neuron/Neurons - used for a feedforward network topology
 typedef std::vector<Neuron> Layer;
+
+// A set of double values
+typedef std::vector<double> Vector;
+
+// A set of vectors
+typedef std::vector<Vector> VectorSet;
 
 // A point of 4 vertices (x, y, z, w)
 struct Point {
@@ -130,9 +137,19 @@ typedef std::vector<Point> Vertices;
 // *********************** Define Neurons ********************* //
 // ************************************************************ //
 
-#define		BIAS_NEURON							0x000007
-#define		INPUT_NEURON						0x000008
-#define		STANDART_NEURON						0x000009
-#define		STANDART_NEURON_HEAVISIDE			0x00000A
-#define		STANDART_NEURON_FERMI				0x00000B
-#define		STANDART_NEURON_HYPERBOLIC			0x00000C
+#define		BIAS_NEURON							0x100001
+#define		INPUT_NEURON						0x100002
+#define		STANDART_NEURON						0x100003
+#define		STANDART_NEURON_HEAVISIDE			0x100004
+#define		STANDART_NEURON_FERMI				0x100005
+#define		STANDART_NEURON_HYPERBOLIC			0x100006
+
+
+// ************************************************************ //
+// *********************** Define Training ******************** //
+// ************************************************************ //
+
+#define		COSTUM_ERROR_MES					0x200000
+#define		SIMPLE_BACKPROPAGATION_ERROR_MES	0x200001
+#define		EUCLIDEAN_DISTANCE_ERROR_MES		0x200002
+#define		ROOT_MEAN_SQUARE_ERROR_MES			0x200003

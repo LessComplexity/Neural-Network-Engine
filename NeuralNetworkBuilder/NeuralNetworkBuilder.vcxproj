@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NetworkTrainer.cpp" />
     <ClCompile Include="NeuralNetwork.cpp" />
     <ClCompile Include="NeuralSimulator.cpp" />
     <ClCompile Include="Neuron.cpp" />
@@ -140,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="definitions.h" />
     <ClInclude Include="Drawable.h" />
+    <ClInclude Include="NetworkTrainer.h" />
     <ClInclude Include="NeuralNetworkBuilder.h" />
     <ClInclude Include="NeuralNetwork.h" />
     <ClInclude Include="NeuralSimulator.h" />
@@ -148,7 +150,6 @@
   <ItemGroup>
     <None Include="FragmentShader.glsl" />
     <None Include="VertexShader.glsl" />
-    <None Include="kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
