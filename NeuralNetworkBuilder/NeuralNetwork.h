@@ -14,6 +14,7 @@
 #pragma once
 #include "Neuron.h"
 #include "NeuralSimulator.h"
+#include "NeuralClient.h"
 
 class NeuralNetwork
 {
@@ -36,6 +37,12 @@ public:
 	void startSimulator(const char* window_title, int width, int height, bool full_screen);
 	// Stop simulating
 	void stopSimulator();
+	// Reset the network values randomly
+	void resetNetwork();
+	// Use a server to increase proccessing power
+	void useServer(const char * server_ip, const char * port, const char * token);
+	// Start network as server
+	void runAsServer();
 
 	// Function to get random weight
 	static double getRandomWeight() { return RandomNumber() / double(RAND_MAXIMUM); }
@@ -60,6 +67,8 @@ public:
 private:
 	// Simulator thread
 	std::thread simulator_thread;
+	// Connection thread
+	std::thread connection_thread;
 
 	// A viable that stores the topology type of the network
 	unsigned short topology;

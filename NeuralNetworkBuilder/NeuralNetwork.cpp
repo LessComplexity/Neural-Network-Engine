@@ -214,6 +214,43 @@ void NeuralNetwork::stopSimulator()
 	simulator_thread.detach();
 }
 
+void NeuralNetwork::resetNetwork()
+{
+	#ifdef DEBUG
+		std::cout << "[+] NNE: Resetting network." << std::endl;
+	#endif // DEBUG
+	// In case of an interconnected network
+	if (this->topology == COMPLETE_INTERCONNECTION)
+	{
+		// Reset each connection for every neuron
+		for (Neuron neuron : this->neurons)
+			neuron.resetConnections();
+	}
+	else
+	{
+		// Loop through each layer and reset connections as random
+		for (int layerNum = 0; layerNum < this->feedforward_layers->size(); layerNum++)
+		{
+			for (int neuronNum = 0; neuronNum < this->feedforward_layers->at(layerNum).size(); neuronNum++)
+			{
+				this->feedforward_layers->at(layerNum)[neuronNum].resetConnections();
+			}
+		}
+	}
+	#ifdef DEBUG
+		std::cout << "[+] NNE: Reset done." << std::endl;
+		std::cout << std::endl;
+	#endif // DEBUG
+}
+
+void NeuralNetwork::useServer(const char * server_ip, const char * port, const char * token)
+{
+}
+
+void NeuralNetwork::runAsServer()
+{
+}
+
 // Load to memory the feedforward network
 void NeuralNetwork::buildFeedforwardNet()
 {

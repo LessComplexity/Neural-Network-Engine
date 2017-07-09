@@ -202,7 +202,7 @@ int NeuralSimulator::addShadingProgram(const char * vertexShader, const char * f
 	this->programs.push_back(ProgramID);
 
 	// Return ID
-	return this->programs.size() - 1;
+	return (int) this->programs.size() - 1;
 }
 
 void NeuralSimulator::setProgram(int program_id)

@@ -33,6 +33,18 @@
 #include <CL\cl.hpp>
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+
+// Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
+#pragma comment (lib, "Ws2_32.lib")
+#pragma comment (lib, "Mswsock.lib")
+#pragma comment (lib, "AdvApi32.lib")
+
 #endif
 
 // ************************************************************ //
@@ -40,7 +52,7 @@
 // ************************************************************ //
 
 #define		DEBUG
-#define		RAND_MAXIMUM		0x0000FFFF
+#define		RAND_MAXIMUM		0x00000FFF
 
 static void pause()
 {
@@ -62,9 +74,9 @@ static int RandomNumber()
 	return uniform_dist(engine);
 }
 
-// ************************************************************** //
-// ********************** Define Simulator ********************** //
-// ************************************************************** //
+// ************************************************************ //
+// ********************** Define Simulator ******************** //
+// ************************************************************ //
 
 class Drawable;
 class NeuralSimulator;
@@ -76,6 +88,17 @@ class NeuralSimulator;
 class Neuron;
 class NeuralNetwork;
 class NetworkTrainer;
+
+// ************************************************************ //
+// ********************** Define Networking ******************* //
+// ************************************************************ //
+
+class Server;
+class Client;
+class Machine;
+
+#define		MACHINE_CODE				"IAmMachine"
+#define		CLIENT_CODE					"IAmMachine"
 
 // ************************************************************ //
 // ***************** Define Connections/Layers **************** //
@@ -94,7 +117,7 @@ typedef std::map<int, Connection> Connections;
 typedef std::vector<Neuron> Layer;
 
 // A set of double values
-typedef std::vector<double> Vector;
+typedef std::vector<long double> Vector;
 
 // A set of vectors
 typedef std::vector<Vector> VectorSet;

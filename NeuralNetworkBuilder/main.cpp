@@ -7,7 +7,7 @@ int main()
 	NeuralNetwork * nn = new NeuralNetwork(FEEDFORWARD_STANDART);
 
 	// Start simulator
-	nn->startSimulator("Simulator", 700, 500, false);
+	//nn->startSimulator("Simulator", 700, 500, false);
 
 	// Set a neuron type to use for the network
 	nn->setNeuronType(STANDART_NEURON);

@@ -131,21 +131,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="NeuralClient.cpp" />
     <ClCompile Include="Drawable.cpp" />
+    <ClCompile Include="Machine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NetworkTrainer.cpp" />
     <ClCompile Include="NeuralNetwork.cpp" />
     <ClCompile Include="NeuralSimulator.cpp" />
     <ClCompile Include="Neuron.cpp" />
+    <ClCompile Include="NeuralServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="NeuralClient.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="Drawable.h" />
+    <ClInclude Include="Machine.h" />
     <ClInclude Include="NetworkTrainer.h" />
     <ClInclude Include="NeuralNetworkBuilder.h" />
     <ClInclude Include="NeuralNetwork.h" />
     <ClInclude Include="NeuralSimulator.h" />
     <ClInclude Include="Neuron.h" />
+    <ClInclude Include="NeuralServer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FragmentShader.glsl" />

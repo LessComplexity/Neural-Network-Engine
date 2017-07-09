@@ -27,9 +27,14 @@ public:
 	// Set the training inputs and patterns for the trainer to work with
 	void setTrainingSet(VectorSet training_input, VectorSet training_patterns);
 	// Set the function to use for error mesurement
-	void setErrorMesurementFunction(std::function<Vector(Vector training_input, Vector network_output)> error_mesurement);
+	void setErrorMesurementFunction(std::function<long double(Vector training_input, Vector network_output)> error_mesurement);
+
+	// Calculate total error
+	void calculateTotalError();
+	// Returns the total error varialbe
+	long double getTotalError();
 private:
-	// A variable that indicated the type of training we want to perform
+	// A variable that indicated the type of training we want to perfoqrm
 	int training_type = 0;
 	int err_function_type = COSTUM_ERROR_MES;
 
@@ -44,7 +49,11 @@ private:
 	VectorSet error_vectors = VectorSet();
 	// A vector list of the outputs the network gave us when training
 	VectorSet output_vectors = VectorSet();
+	// A vector containing all the error mesurement values that have returned by the net
+	Vector error_mes_vector = Vector();
+	// Variable for storing the total error of a batch of training samples
+	long double total_error = 0;
 
 	// An object holder of the error measuring function
-	std::function<Vector(Vector training_input, Vector network_output)> error_mesurement;
+	std::function<long double(Vector training_input, Vector network_output)> error_mesurement;
 };

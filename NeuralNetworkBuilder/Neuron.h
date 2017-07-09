@@ -77,6 +77,8 @@ public:
 	void setNeuronId(int id);
 	// Set the connections of the neuron to the previous neurons
 	void setConnections(Connections connections);
+	// Reset connections and their values
+	void resetConnections();
 
 private:
 	// Propagation function

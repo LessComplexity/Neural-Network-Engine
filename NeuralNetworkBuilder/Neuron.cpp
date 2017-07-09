@@ -291,6 +291,15 @@ void Neuron::setConnections(Connections connections)
 	this->connections = connections;
 }
 
+void Neuron::resetConnections()
+{
+	// Set random connections
+	for (Connections::iterator con = this->connections.begin(); con != this->connections.end(); ++con)
+	{
+		con->second.weight = double(RandomNumber()) / double(RAND_MAXIMUM);
+	}
+}
+
 // Get the nework input
 double Neuron::getNeuronInput()
 {
